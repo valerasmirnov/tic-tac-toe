@@ -3,34 +3,37 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Крестики-нолики (моб.)</title>
+  <title>Крестики-нолики</title>
+
   <style>
     :root{
       --bg:#0b0c10;
-      --card:#151822;
       --text:#e9edf1;
       --muted:#a8b0bb;
-      --accent:#7aa2ff;
       --cell:#1c2130;
       --cellActive:#262d42;
-      --border:rgba(255,255,255,.10);
+      --border:rgba(255,255,255,.12);
       --radius:18px;
     }
 
-    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    *{
+      box-sizing:border-box;
+      -webkit-tap-highlight-color:transparent;
+    }
+
     body{
       margin:0;
       min-height:100dvh;
-      background:linear-gradient(180deg, #0b0c10 0%, #0f1220 100%);
+      background:linear-gradient(180deg,#0b0c10,#0f1220);
       color:var(--text);
-      font-family: -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+      font-family:-apple-system,system-ui,Segoe UI,Roboto,Arial,sans-serif;
       display:flex;
       justify-content:center;
-      padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+      padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
     }
 
     .app{
-      width:min(520px, 100%);
+      width:min(520px,100%);
       display:flex;
       flex-direction:column;
       gap:14px;
@@ -41,43 +44,32 @@
       display:flex;
       justify-content:space-between;
       align-items:flex-end;
-      gap:12px;
     }
 
     h1{
       margin:0;
       font-size:22px;
-      letter-spacing:.2px;
     }
 
     .sub{
-      margin:4px 0 0;
-      color:var(--muted);
+      margin-top:4px;
       font-size:14px;
+      color:var(--muted);
     }
 
     .pill{
       padding:8px 12px;
       border:1px solid var(--border);
       border-radius:999px;
-      background:rgba(255,255,255,.04);
       font-size:14px;
-      white-space:nowrap;
-    }
-
-    .card{
       background:rgba(255,255,255,.04);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:14px;
     }
 
-    /* Адаптивная доска: квадрат по ширине экрана */
     .board{
       width:100%;
       aspect-ratio:1/1;
       display:grid;
-      grid-template-columns:repeat(3, 1fr);
+      grid-template-columns:repeat(3,1fr);
       gap:10px;
       padding:12px;
       background:rgba(255,255,255,.03);
@@ -92,20 +84,18 @@
       background:var(--cell);
       border:1px solid var(--border);
       border-radius:16px;
-      font-size:clamp(44px, 10vw, 72px);
+      font-size:clamp(44px,10vw,72px);
       font-weight:800;
-      user-select:none;
       cursor:pointer;
       transition:background .12s ease;
-      touch-action:manipulation;
+      user-select:none;
     }
-    /* Без изменения размера при нажатии */
+
     .cell:active{
       background:var(--cellActive);
     }
 
-    /* Цвета символов */
-    .cell.o{ color:#4da3ff; }  /* нолики синие */
+    .cell.o{ color:#4da3ff; }
     .cell.x{ color:var(--text); }
 
     .row{
@@ -116,68 +106,63 @@
 
     button{
       flex:1;
-      min-width:160px;
-      border:none;
-      border-radius:14px;
-      padding:12px 14px;
+      padding:12px;
       font-size:16px;
       font-weight:700;
-      color:var(--text);
-      background:rgba(255,255,255,.08);
+      border-radius:14px;
       border:1px solid var(--border);
+      background:rgba(255,255,255,.08);
+      color:var(--text);
       cursor:pointer;
-      transition:background .12s ease;
-      touch-action:manipulation;
     }
+
     button:active{
       background:rgba(255,255,255,.12);
     }
 
     .primary{
-      background:rgba(122,162,255,.20);
+      background:rgba(122,162,255,.22);
       border-color:rgba(122,162,255,.35);
     }
-    .primary:active{
-      background:rgba(122,162,255,.26);
-    }
 
-    .note{
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.35;
-      margin:0;
-    }
-
-    /* ===== Оверлей с итогом игры ===== */
+    /* ===== OVERLAY ===== */
     .overlay{
       position:fixed;
       inset:0;
       display:flex;
       align-items:center;
       justify-content:center;
-      padding:24px;
       background:rgba(0,0,0,.55);
       backdrop-filter:blur(6px);
       z-index:999;
+      padding:24px;
     }
+
+    /* 🔴 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ */
+    .overlay[hidden]{
+      display:none !important;
+    }
+
     .modal{
-      width:min(420px, 100%);
-      background:rgba(21,24,34,.92);
+      background:rgba(21,24,34,.95);
       border:1px solid var(--border);
       border-radius:18px;
       padding:16px;
+      width:min(420px,100%);
     }
+
     .modalTitle{
       font-size:20px;
       font-weight:900;
       margin-bottom:8px;
     }
+
     .modalText{
-      color:var(--muted);
       font-size:15px;
-      line-height:1.35;
+      color:var(--muted);
       margin-bottom:14px;
     }
+
     .modalBtns{
       display:flex;
       gap:10px;
@@ -191,26 +176,23 @@
     <header>
       <div>
         <h1>Крестики-нолики</h1>
-        <p class="sub" id="subtitle">Ход: ❌</p>
+        <div class="sub" id="subtitle">Ход: ❌</div>
       </div>
       <div class="pill" id="score">❌ 0 : 0 ⭕</div>
     </header>
 
-    <div class="board" id="board" aria-label="Игровое поле 3 на 3"></div>
+    <div class="board" id="board"></div>
 
-    <div class="card">
-      <div class="row">
-        <button class="primary" id="restartBtn">Новая игра</button>
-        <button id="resetScoreBtn">Сбросить счёт</button>
-      </div>
-      <p class="note">Совет: на iPhone открой в Safari → Поделиться → «Добавить на экран Домой».</p>
+    <div class="row">
+      <button class="primary" id="restartBtn">Новая игра</button>
+      <button id="resetScoreBtn">Сбросить счёт</button>
     </div>
   </div>
 
-  <!-- Оверлей результата -->
+  <!-- OVERLAY -->
   <div class="overlay" id="overlay" hidden>
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modalTitle" id="modalTitle">Игра окончена</div>
+    <div class="modal">
+      <div class="modalTitle" id="modalTitle"></div>
       <div class="modalText" id="modalText"></div>
       <div class="modalBtns">
         <button class="primary" id="playAgainBtn">Играть ещё</button>
@@ -224,16 +206,11 @@
     const subtitle = document.getElementById('subtitle');
     const scoreEl = document.getElementById('score');
 
-    const restartBtn = document.getElementById('restartBtn');
-    const resetScoreBtn = document.getElementById('resetScoreBtn');
-
     const overlay = document.getElementById('overlay');
     const modalTitle = document.getElementById('modalTitle');
     const modalText = document.getElementById('modalText');
-    const playAgainBtn = document.getElementById('playAgainBtn');
-    const closeBtn = document.getElementById('closeBtn');
 
-    let currentPlayer = '❌';
+    let current = '❌';
     let cells = Array(9).fill(null);
     let gameOver = false;
 
@@ -246,104 +223,76 @@
       [0,4,8],[2,4,6]
     ];
 
-    function updateScoreUI(){
-      scoreEl.textContent = `❌ ${scoreX} : ${scoreO} ⭕`;
-    }
-
-    function showOverlay(title, text){
-      modalTitle.textContent = title;
-      modalText.textContent = text;
-      overlay.hidden = false;
-    }
-
-    function hideOverlay(){
-      overlay.hidden = true;
-    }
-
-    function checkWinner(){
-      for (const [a,b,c] of wins){
-        if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]){
-          return cells[a];
-        }
-      }
-      return cells.includes(null) ? null : 'draw';
-    }
-
-    function onCellClick(i){
-      if (cells[i] || gameOver) return;
-
-      cells[i] = currentPlayer;
-      render();
-
-      const result = checkWinner();
-      if (result){
-        gameOver = true;
-
-        if (result === 'draw'){
-          subtitle.textContent = 'Ничья 🤝';
-          showOverlay('Ничья 🤝', 'Сильная партия. Сыграем ещё?');
-        } else {
-          if (result === '❌') scoreX++;
-          if (result === '⭕') scoreO++;
-          updateScoreUI();
-
-          subtitle.textContent = `Победил ${result} 🎉`;
-          showOverlay('Игра окончена 🎉', `Победил ${result}`);
-        }
-        return;
-      }
-
-      currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
-      subtitle.textContent = `Ход: ${currentPlayer}`;
-    }
-
     function render(){
-      board.innerHTML = '';
-      cells.forEach((value, i) => {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.textContent = value || '';
-        cell.classList.toggle('x', value === '❌');
-        cell.classList.toggle('o', value === '⭕');
-        cell.addEventListener('click', () => onCellClick(i));
-        board.appendChild(cell);
+      board.innerHTML='';
+      cells.forEach((v,i)=>{
+        const c=document.createElement('div');
+        c.className='cell';
+        c.textContent=v||'';
+        c.classList.toggle('x',v==='❌');
+        c.classList.toggle('o',v==='⭕');
+        c.onclick=()=>clickCell(i);
+        board.appendChild(c);
       });
     }
 
+    function clickCell(i){
+      if(cells[i]||gameOver) return;
+      cells[i]=current;
+      render();
+      const r=check();
+      if(r){
+        gameOver=true;
+        if(r==='draw'){
+          showOverlay('Ничья 🤝','Сыграем ещё?');
+        }else{
+          r==='❌'?scoreX++:scoreO++;
+          updateScore();
+          showOverlay('Игра окончена 🎉',`Победил ${r}`);
+        }
+        return;
+      }
+      current=current==='❌'?'⭕':'❌';
+      subtitle.textContent=`Ход: ${current}`;
+    }
+
+    function check(){
+      for(const [a,b,c] of wins){
+        if(cells[a]&&cells[a]===cells[b]&&cells[a]===cells[c]) return cells[a];
+      }
+      return cells.includes(null)?null:'draw';
+    }
+
+    function updateScore(){
+      scoreEl.textContent=`❌ ${scoreX} : ${scoreO} ⭕`;
+    }
+
     function resetGame(){
-      cells = Array(9).fill(null);
-      currentPlayer = '❌';
-      gameOver = false;
-      subtitle.textContent = 'Ход: ❌';
+      cells=Array(9).fill(null);
+      current='❌';
+      gameOver=false;
+      subtitle.textContent='Ход: ❌';
+      overlay.hidden=true;
       render();
     }
 
-    restartBtn.addEventListener('click', () => {
-      hideOverlay();
+    function showOverlay(t,txt){
+      modalTitle.textContent=t;
+      modalText.textContent=txt;
+      overlay.hidden=false;
+    }
+
+    document.getElementById('restartBtn').onclick=resetGame;
+    document.getElementById('resetScoreBtn').onclick=()=>{
+      scoreX=scoreO=0;
+      updateScore();
       resetGame();
-    });
+    };
+    document.getElementById('playAgainBtn').onclick=resetGame;
+    document.getElementById('closeBtn').onclick=()=>overlay.hidden=true;
+    overlay.onclick=e=>{if(e.target===overlay)overlay.hidden=true};
 
-    resetScoreBtn.addEventListener('click', () => {
-      scoreX = 0;
-      scoreO = 0;
-      updateScoreUI();
-      hideOverlay();
-      resetGame();
-    });
-
-    playAgainBtn.addEventListener('click', () => {
-      hideOverlay();
-      resetGame();
-    });
-
-    closeBtn.addEventListener('click', hideOverlay);
-
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) hideOverlay(); // клик по фону
-    });
-
-    // старт
-    updateScoreUI();
+    updateScore();
     render();
   </script>
 </body>
