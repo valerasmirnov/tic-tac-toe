@@ -234,7 +234,7 @@
 
     <div class="row">
       <button class="primary" id="newGameBtn">Новая игра</button>
-      <button id="resetScoreBtn">Сбросить счёт</button>
+      <button id="resetScoreBtn">Обнулить счёт</button>
     </div>
   </div>
 
@@ -289,6 +289,16 @@
   </div>
 
   <script>
+    // ===== Storage keys =====
+    const LS = {
+      mode: 'ttt_mode',            // 'pvp' | 'ai'
+      human: 'ttt_human',          // 'X' | 'O'
+      difficulty: 'ttt_difficulty',// 'easy' | 'medium' | 'hard'
+      scoreX: 'ttt_scoreX',
+      scoreO: 'ttt_scoreO'
+    };
+
+    // ===== DOM =====
     const boardEl = document.getElementById('board');
     const subtitleEl = document.getElementById('subtitle');
     const scoreEl = document.getElementById('score');
@@ -315,6 +325,7 @@
     const playAgainBtn = document.getElementById('playAgainBtn');
     const closeResultBtn = document.getElementById('closeResultBtn');
 
+    // ===== Consts =====
     const X = 'X';
     const O = 'O';
 
@@ -324,10 +335,11 @@
       [0,4,8],[2,4,6]
     ];
 
+    // ===== State =====
     let mode = 'pvp';
-    let human = X;
+    let human = X;          // только для ai
     let ai = O;
-    let difficulty = 'easy';
+    let difficulty = 'medium';
 
     let current = X;
     let cells = Array(9).fill(null);
@@ -340,15 +352,47 @@
 
     let endTimer = null;
 
+    // ===== Persistence =====
+    function saveSettings(){
+      localStorage.setItem(LS.mode, mode);
+      localStorage.setItem(LS.human, human);
+      localStorage.setItem(LS.difficulty, difficulty);
+    }
+
+    function saveScore(){
+      localStorage.setItem(LS.scoreX, String(scoreX));
+      localStorage.setItem(LS.scoreO, String(scoreO));
+    }
+
+    function loadPersisted(){
+      const m = localStorage.getItem(LS.mode);
+      if (m === 'pvp' || m === 'ai') mode = m;
+
+      const h = localStorage.getItem(LS.human);
+      if (h === X || h === O) human = h;
+
+      const d = localStorage.getItem(LS.difficulty);
+      if (d === 'easy' || d === 'medium' || d === 'hard') difficulty = d;
+
+      const sx = Number(localStorage.getItem(LS.scoreX));
+      const so = Number(localStorage.getItem(LS.scoreO));
+      if (!Number.isNaN(sx)) scoreX = sx;
+      if (!Number.isNaN(so)) scoreO = so;
+    }
+
+    // ===== Helpers =====
     function markHTML(p){
       return p === X ? '<span class="markX">X</span>' : '<span class="markO">O</span>';
     }
-    function updateScore(){
+
+    function updateScoreUI(){
       scoreEl.innerHTML = `${markHTML(X)} ${scoreX} : ${scoreO} ${markHTML(O)}`;
     }
+
     function clearEndTimer(){
       if (endTimer){ clearTimeout(endTimer); endTimer = null; }
     }
+
     function setSubtitleTurn(){
       if (gameOver) return;
       if (mode === 'ai'){
@@ -361,6 +405,7 @@
 
     function showStartOverlay(){ startOverlay.hidden = false; }
     function hideStartOverlay(){ startOverlay.hidden = true; }
+
     function showResultOverlay(title, html){
       resultTitle.textContent = title;
       resultText.innerHTML = html;
@@ -368,6 +413,21 @@
     }
     function hideResultOverlay(){ resultOverlay.hidden = true; }
 
+    // ===== UI sync for start screen =====
+    function syncStartUI(){
+      modePvp.classList.toggle('active', mode === 'pvp');
+      modeAi.classList.toggle('active', mode === 'ai');
+
+      sideField.style.display = (mode === 'ai') ? '' : 'none';
+      difficultyField.style.display = (mode === 'ai') ? '' : 'none';
+
+      sideX.classList.toggle('active', human === X);
+      sideO.classList.toggle('active', human === O);
+
+      difficultyEl.value = difficulty;
+    }
+
+    // ===== Render =====
     function render(){
       boardEl.innerHTML = '';
       cells.forEach((v,i)=>{
@@ -383,6 +443,7 @@
       });
     }
 
+    // ===== Game logic =====
     function checkWinner(){
       for (const [a,b,c] of wins){
         if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]){
@@ -405,7 +466,9 @@
         } else {
           if (res.winner === X) scoreX++;
           if (res.winner === O) scoreO++;
-          updateScore();
+          updateScoreUI();
+          saveScore();
+
           subtitleEl.innerHTML = `Победил ${markHTML(res.winner)} 🎉`;
           showResultOverlay('Игра окончена 🎉', `Победил ${markHTML(res.winner)}`);
         }
@@ -466,7 +529,6 @@
       return empty[Math.floor(Math.random()*empty.length)];
     }
 
-    // Средний: win-in-1, block-in-1, иначе "умный" приоритет + немного рандома
     function mediumMove(board, aiP, humanP){
       const win = findImmediateWin(board, aiP);
       if (win != null) return win;
@@ -474,7 +536,6 @@
       const block = findImmediateWin(board, humanP);
       if (block != null) return block;
 
-      // 70% — "умный" выбор, 30% — случайный (чтобы не был идеальным)
       if (Math.random() < 0.7){
         const pref = preferredMove(board);
         if (pref != null) return pref;
@@ -494,8 +555,7 @@
     }
 
     function preferredMove(board){
-      // центр → углы → стороны
-      const order = [4,0,2,6,8,1,3,5,7];
+      const order = [4,0,2,6,8,1,3,5,7]; // центр → углы → стороны
       for (const i of order){
         if (!board[i]) return i;
       }
@@ -509,10 +569,10 @@
       return board.includes(null) ? null : 'draw';
     }
 
-    // Minimax (hard)
     function bestMoveMinimax(board, player){
       return minimax(board.slice(), player);
     }
+
     function minimax(b, player){
       const t = winnerOn(b);
       if (t){
@@ -562,6 +622,7 @@
         ai = (human === X) ? O : X;
         current = X; // всегда начинает X
         hideStartOverlay();
+        setSubtitleTurn();
 
         // если человек выбрал O — ИИ за X ходит первым
         if (human === O){
@@ -579,57 +640,67 @@
       }
     }
 
+    // ===== Start screen controls =====
     function setMode(next){
       mode = next;
-      modePvp.classList.toggle('active', mode === 'pvp');
-      modeAi.classList.toggle('active', mode === 'ai');
-      sideField.style.display = (mode === 'ai') ? '' : 'none';
-      difficultyField.style.display = (mode === 'ai') ? '' : 'none';
+      syncStartUI();
+      saveSettings();
     }
 
     function setSide(next){
       human = next;
-      sideX.classList.toggle('active', human === X);
-      sideO.classList.toggle('active', human === O);
+      syncStartUI();
+      saveSettings();
     }
 
     modePvp.addEventListener('click', () => setMode('pvp'));
     modeAi.addEventListener('click', () => setMode('ai'));
+
     sideX.addEventListener('click', () => setSide(X));
     sideO.addEventListener('click', () => setSide(O));
-    difficultyEl.addEventListener('change', () => difficulty = difficultyEl.value);
 
-    startBtn.addEventListener('click', startGame);
+    difficultyEl.addEventListener('change', () => {
+      difficulty = difficultyEl.value;
+      saveSettings();
+    });
+
+    startBtn.addEventListener('click', () => {
+      saveSettings();
+      startGame();
+    });
 
     closeStartBtn.addEventListener('click', () => {
       startOverlay.hidden = true;
+      // если игры ещё не было — не даём уйти на пустой экран
       if (!cells.some(v => v) && scoreX === 0 && scoreO === 0) startOverlay.hidden = false;
     });
 
+    // ===== Buttons =====
     newGameBtn.addEventListener('click', () => {
       hideResultOverlay();
+      syncStartUI();
       showStartOverlay();
     });
 
     resetScoreBtn.addEventListener('click', () => {
-      scoreX = 0; scoreO = 0;
-      updateScore();
-      hideResultOverlay();
-      showStartOverlay();
+      scoreX = 0;
+      scoreO = 0;
+      updateScoreUI();
+      saveScore();
     });
 
     playAgainBtn.addEventListener('click', () => {
       hideResultOverlay();
-      startGame();
+      startGame(); // с теми же настройками
     });
 
     closeResultBtn.addEventListener('click', hideResultOverlay);
     resultOverlay.addEventListener('click', (e) => { if (e.target === resultOverlay) hideResultOverlay(); });
 
-    updateScore();
-    setMode('pvp');
-    setSide(X);
-    difficulty = difficultyEl.value;
+    // ===== Init =====
+    loadPersisted();
+    syncStartUI();
+    updateScoreUI();
     render();
     showStartOverlay();
   </script>
