@@ -13,8 +13,8 @@
       --cellActive:#262d42;
       --border:rgba(255,255,255,.12);
       --radius:18px;
-      --x:#ff3b30;     /* красный X */
-      --o:#4da3ff;     /* синий O */
+      --x:#ff3b30;
+      --o:#4da3ff;
     }
 
     *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -42,11 +42,10 @@
       display:flex;
       justify-content:space-between;
       align-items:flex-end;
-      gap:12px;
     }
 
-    h1{ margin:0; font-size:22px; letter-spacing:.2px; }
-    .sub{ margin:4px 0 0; font-size:14px; color:var(--muted); }
+    h1{ margin:0; font-size:22px; }
+    .sub{ margin-top:4px; font-size:14px; color:var(--muted); }
 
     .pill{
       padding:8px 12px;
@@ -54,7 +53,6 @@
       border-radius:999px;
       background:rgba(255,255,255,.04);
       font-size:14px;
-      white-space:nowrap;
     }
 
     .board{
@@ -71,31 +69,25 @@
 
     .cell{
       width:100%;
-      aspect-ratio:1/1;           /* клетки всегда квадратные */
+      aspect-ratio:1/1;
       display:flex;
       align-items:center;
       justify-content:center;
-
       background:var(--cell);
       border:1px solid var(--border);
       border-radius:16px;
-
       font-size:clamp(44px,10vw,72px);
       font-weight:900;
       line-height:1;
-
       cursor:pointer;
       user-select:none;
       transition:background .12s ease, box-shadow .2s ease, border-color .2s ease;
-      touch-action:manipulation;
     }
 
-    .cell:active{ background:var(--cellActive); } /* без масштабирования */
-
+    .cell:active{ background:var(--cellActive); }
     .cell.x{ color:var(--x); }
     .cell.o{ color:var(--o); }
 
-    /* ✅ Победная линия: подсветка 3 клеток */
     .cell.win{
       border-color: rgba(122,162,255,.65);
       box-shadow: 0 0 0 2px rgba(122,162,255,.25), 0 0 28px rgba(122,162,255,.18);
@@ -104,13 +96,11 @@
     .row{
       display:flex;
       gap:10px;
-      flex-wrap:wrap;
     }
 
     button{
       flex:1;
-      min-width:160px;
-      padding:12px 14px;
+      padding:12px;
       font-size:16px;
       font-weight:800;
       border-radius:14px;
@@ -118,18 +108,13 @@
       background:rgba(255,255,255,.08);
       color:var(--text);
       cursor:pointer;
-      transition:background .12s ease;
-      touch-action:manipulation;
     }
-    button:active{ background:rgba(255,255,255,.12); }
 
     .primary{
       background:rgba(122,162,255,.22);
       border-color:rgba(122,162,255,.35);
     }
-    .primary:active{ background:rgba(122,162,255,.28); }
 
-    /* OVERLAY */
     .overlay{
       position:fixed;
       inset:0;
@@ -141,6 +126,7 @@
       backdrop-filter:blur(6px);
       z-index:999;
     }
+
     .overlay[hidden]{ display:none !important; }
 
     .modal{
@@ -161,13 +147,11 @@
       font-size:15px;
       color:var(--muted);
       margin-bottom:14px;
-      line-height:1.35;
     }
 
     .modalBtns{
       display:flex;
       gap:10px;
-      flex-wrap:wrap;
     }
   </style>
 </head>
@@ -182,7 +166,7 @@
       <div class="pill" id="score">❌ 0 : 0 ⭕</div>
     </header>
 
-    <div class="board" id="board" aria-label="Игровое поле 3 на 3"></div>
+    <div class="board" id="board"></div>
 
     <div class="row">
       <button class="primary" id="restartBtn">Новая игра</button>
@@ -191,8 +175,8 @@
   </div>
 
   <div class="overlay" id="overlay" hidden>
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modalTitle" id="modalTitle">Игра окончена</div>
+    <div class="modal">
+      <div class="modalTitle" id="modalTitle"></div>
       <div class="modalText" id="modalText"></div>
       <div class="modalBtns">
         <button class="primary" id="playAgainBtn">Играть ещё</button>
@@ -206,27 +190,21 @@
     const subtitle = document.getElementById('subtitle');
     const scoreEl = document.getElementById('score');
 
-    const restartBtn = document.getElementById('restartBtn');
-    const resetScoreBtn = document.getElementById('resetScoreBtn');
-
     const overlay = document.getElementById('overlay');
     const modalTitle = document.getElementById('modalTitle');
     const modalText = document.getElementById('modalText');
-    const playAgainBtn = document.getElementById('playAgainBtn');
-    const closeBtn = document.getElementById('closeBtn');
 
     const X = 'X';
     const O = 'O';
-    const toEmoji = (p) => p === X ? '❌' : '⭕';
+    const toEmoji = p => p === X ? '❌' : '⭕';
 
     let current = X;
     let cells = Array(9).fill(null);
     let gameOver = false;
+    let winningLine = null;
 
     let scoreX = 0;
     let scoreO = 0;
-
-    let winningLine = null; // ✅ победная тройка индексов
 
     const wins = [
       [0,1,2],[3,4,5],[6,7,8],
@@ -234,28 +212,17 @@
       [0,4,8],[2,4,6]
     ];
 
-    function updateScoreUI(){
+    function updateScore(){
       scoreEl.textContent = `❌ ${scoreX} : ${scoreO} ⭕`;
     }
 
-    function showOverlay(title, text){
-      modalTitle.textContent = title;
-      modalText.textContent = text;
-      overlay.hidden = false;
-    }
-
-    function hideOverlay(){
-      overlay.hidden = true;
-    }
-
-    // ✅ теперь возвращает объект { winner, line } или null
     function checkWinner(){
       for (const [a,b,c] of wins){
         if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]){
-          return { winner: cells[a], line: [a,b,c] };
+          return { winner: cells[a], line:[a,b,c] };
         }
       }
-      return cells.includes(null) ? null : { winner: 'draw', line: null };
+      return cells.includes(null) ? null : { winner:'draw', line:null };
     }
 
     function onCellClick(i){
@@ -267,22 +234,22 @@
       const result = checkWinner();
       if (result){
         gameOver = true;
-
-        // ✅ сохраняем победную линию для подсветки
-        if (result.winner !== 'draw') winningLine = result.line;
+        winningLine = result.line;
         render();
 
-        if (result.winner === 'draw'){
-          subtitle.textContent = 'Ничья 🤝';
-          showOverlay('Ничья 🤝', 'Сильная партия. Сыграем ещё?');
-        } else {
-          if (result.winner === X) scoreX++;
-          if (result.winner === O) scoreO++;
-          updateScoreUI();
+        setTimeout(() => {
+          if (result.winner === 'draw'){
+            subtitle.textContent = 'Ничья 🤝';
+            showOverlay('Ничья 🤝','Сыграем ещё?');
+          } else {
+            if (result.winner === X) scoreX++;
+            if (result.winner === O) scoreO++;
+            updateScore();
+            subtitle.textContent = `Победил ${toEmoji(result.winner)} 🎉`;
+            showOverlay('Игра окончена 🎉',`Победил ${toEmoji(result.winner)}`);
+          }
+        }, 2000);
 
-          subtitle.textContent = `Победил ${toEmoji(result.winner)} 🎉`;
-          showOverlay('Игра окончена 🎉', `Победил ${toEmoji(result.winner)}`);
-        }
         return;
       }
 
@@ -292,48 +259,44 @@
 
     function render(){
       board.innerHTML = '';
-      cells.forEach((value, i) => {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.textContent = value ? value : '';
-        cell.classList.toggle('x', value === X);
-        cell.classList.toggle('o', value === O);
-
-        // ✅ подсветка выигрышных клеток
-        if (winningLine && winningLine.includes(i)) cell.classList.add('win');
-
-        cell.addEventListener('click', () => onCellClick(i));
-        board.appendChild(cell);
+      cells.forEach((v,i)=>{
+        const c = document.createElement('div');
+        c.className='cell';
+        c.textContent = v || '';
+        c.classList.toggle('x',v===X);
+        c.classList.toggle('o',v===O);
+        if (winningLine && winningLine.includes(i)) c.classList.add('win');
+        c.onclick = () => onCellClick(i);
+        board.appendChild(c);
       });
+    }
+
+    function showOverlay(t,txt){
+      modalTitle.textContent = t;
+      modalText.textContent = txt;
+      overlay.hidden = false;
     }
 
     function resetGame(){
       cells = Array(9).fill(null);
       current = X;
       gameOver = false;
-      winningLine = null;          // ✅ сброс подсветки
+      winningLine = null;
       subtitle.textContent = 'Ход: ❌';
-      hideOverlay();
+      overlay.hidden = true;
       render();
     }
 
-    restartBtn.addEventListener('click', resetGame);
-
-    resetScoreBtn.addEventListener('click', () => {
-      scoreX = 0;
-      scoreO = 0;
-      updateScoreUI();
+    document.getElementById('restartBtn').onclick = resetGame;
+    document.getElementById('playAgainBtn').onclick = resetGame;
+    document.getElementById('closeBtn').onclick = () => overlay.hidden = true;
+    document.getElementById('resetScoreBtn').onclick = () => {
+      scoreX = scoreO = 0;
+      updateScore();
       resetGame();
-    });
+    };
 
-    playAgainBtn.addEventListener('click', resetGame);
-    closeBtn.addEventListener('click', hideOverlay);
-
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) hideOverlay();
-    });
-
-    updateScoreUI();
+    updateScore();
     render();
   </script>
 </body>
