@@ -7,7 +7,6 @@
   <style>
     :root{
       --bg:#0b0c10;
-      --card:#151822;
       --text:#e9edf1;
       --muted:#a8b0bb;
       --accent:#7aa2ff;
@@ -16,19 +15,17 @@
       --border:rgba(255,255,255,.10);
       --radius:18px;
     }
-
     *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
     body{
       margin:0;
       min-height:100dvh;
       background:linear-gradient(180deg, #0b0c10 0%, #0f1220 100%);
       color:var(--text);
-      font-family: -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+      font-family:-apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif;
       display:flex;
       justify-content:center;
       padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
     }
-
     .app{
       width:min(520px, 100%);
       display:flex;
@@ -36,26 +33,14 @@
       gap:14px;
       padding:16px 0;
     }
-
     header{
       display:flex;
       justify-content:space-between;
       align-items:flex-end;
       gap:12px;
     }
-
-    h1{
-      margin:0;
-      font-size:22px;
-      letter-spacing:.2px;
-    }
-
-    .sub{
-      margin:4px 0 0;
-      color:var(--muted);
-      font-size:14px;
-    }
-
+    h1{ margin:0; font-size:22px; letter-spacing:.2px; }
+    .sub{ margin:4px 0 0; color:var(--muted); font-size:14px; }
     .pill{
       padding:8px 12px;
       border:1px solid var(--border);
@@ -64,15 +49,6 @@
       font-size:14px;
       white-space:nowrap;
     }
-
-    .card{
-      background:rgba(255,255,255,.04);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:14px;
-    }
-
-    /* Адаптивная доска: квадрат по ширине экрана */
     .board{
       width:100%;
       aspect-ratio:1/1;
@@ -84,7 +60,6 @@
       border:1px solid var(--border);
       border-radius:var(--radius);
     }
-
     .cell{
       display:flex;
       align-items:center;
@@ -96,24 +71,18 @@
       font-weight:700;
       user-select:none;
       cursor:pointer;
-      transition:transform .06s ease, background .12s ease;
-      touch-action:manipulation; /* убирает лишние жесты */
+      transition:transform .06s ease, background .12s ease, opacity .12s ease;
+      touch-action:manipulation;
     }
-    .cell:active{
-      transform:scale(.98);
-      background:var(--cellActive);
+    .cell:active{ transform:scale(.98); background:var(--cellActive); }
+    .cell[aria-disabled="true"]{ opacity:.65; cursor:default; }
+    .card{
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:14px;
     }
-    .cell[disabled]{
-      opacity:.65;
-      cursor:default;
-    }
-
-    .row{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-
+    .row{ display:flex; gap:10px; flex-wrap:wrap; }
     button{
       flex:1;
       min-width:160px;
@@ -129,24 +98,13 @@
       transition:transform .06s ease, background .12s ease;
       touch-action:manipulation;
     }
-    button:active{
-      transform:scale(.99);
-      background:rgba(255,255,255,.12);
-    }
+    button:active{ transform:scale(.99); background:rgba(255,255,255,.12); }
     .primary{
       background:rgba(122,162,255,.20);
       border-color:rgba(122,162,255,.35);
     }
-    .primary:active{
-      background:rgba(122,162,255,.26);
-    }
-
-    .note{
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.35;
-      margin:0;
-    }
+    .primary:active{ background:rgba(122,162,255,.26); }
+    .note{ color:var(--muted); font-size:13px; line-height:1.35; margin:0; }
   </style>
 </head>
 <body>
@@ -163,7 +121,5 @@
 
     <div class="card">
       <div class="row">
-        <button class="primary" id="restartBtn">Новая игра</button>
-        <button id="resetScoreBtn">Сбросить счёт</button>
-      </div>
-      <p class="note">Под телефон: поле всегда квадратное, круп
+        <button class="primary" id="restartBtn" type="button">Новая игра</button>
+        <button id="resetScoreBtn
