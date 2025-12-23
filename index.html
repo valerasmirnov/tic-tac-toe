@@ -7,7 +7,6 @@
 
   <style>
     :root{
-      --bg:#0b0c10;
       --text:#e9edf1;
       --muted:#a8b0bb;
       --cell:#1c2130;
@@ -36,7 +35,7 @@
       display:flex;
       flex-direction:column;
       gap:14px;
-      padding:16px 0;
+      padding:16px 0 24px;
     }
 
     header{
@@ -47,12 +46,7 @@
     }
 
     h1{ margin:0; font-size:22px; letter-spacing:.2px; }
-
-    .sub{
-      margin:4px 0 0;
-      font-size:14px;
-      color:var(--muted);
-    }
+    .sub{ margin:4px 0 0; font-size:14px; color:var(--muted); }
 
     .pill{
       padding:8px 12px;
@@ -75,11 +69,9 @@
       border-radius:var(--radius);
     }
 
-    /* ✅ фикс: клетки всегда квадратные, не зависят от содержимого */
     .cell{
       width:100%;
-      aspect-ratio:1/1;
-
+      aspect-ratio:1/1;           /* клетки всегда квадратные */
       display:flex;
       align-items:center;
       justify-content:center;
@@ -94,16 +86,20 @@
 
       cursor:pointer;
       user-select:none;
-      transition:background .12s ease;
+      transition:background .12s ease, box-shadow .2s ease, border-color .2s ease;
       touch-action:manipulation;
     }
 
-    /* ✅ без масштабирования */
-    .cell:active{ background:var(--cellActive); }
+    .cell:active{ background:var(--cellActive); } /* без масштабирования */
 
-    /* ✅ цвета символов */
     .cell.x{ color:var(--x); }
     .cell.o{ color:var(--o); }
+
+    /* ✅ Победная линия: подсветка 3 клеток */
+    .cell.win{
+      border-color: rgba(122,162,255,.65);
+      box-shadow: 0 0 0 2px rgba(122,162,255,.25), 0 0 28px rgba(122,162,255,.18);
+    }
 
     .row{
       display:flex;
@@ -133,7 +129,7 @@
     }
     .primary:active{ background:rgba(122,162,255,.28); }
 
-    /* ===== OVERLAY ===== */
+    /* OVERLAY */
     .overlay{
       position:fixed;
       inset:0;
@@ -145,7 +141,6 @@
       backdrop-filter:blur(6px);
       z-index:999;
     }
-    /* ✅ фикс hidden */
     .overlay[hidden]{ display:none !important; }
 
     .modal{
@@ -161,12 +156,14 @@
       font-weight:900;
       margin-bottom:8px;
     }
+
     .modalText{
       font-size:15px;
       color:var(--muted);
       margin-bottom:14px;
       line-height:1.35;
     }
+
     .modalBtns{
       display:flex;
       gap:10px;
@@ -218,9 +215,9 @@
     const playAgainBtn = document.getElementById('playAgainBtn');
     const closeBtn = document.getElementById('closeBtn');
 
-    // ✅ В логике используем обычные буквы, не emoji (важно для iOS цветов)
     const X = 'X';
     const O = 'O';
+    const toEmoji = (p) => p === X ? '❌' : '⭕';
 
     let current = X;
     let cells = Array(9).fill(null);
@@ -229,13 +226,13 @@
     let scoreX = 0;
     let scoreO = 0;
 
+    let winningLine = null; // ✅ победная тройка индексов
+
     const wins = [
       [0,1,2],[3,4,5],[6,7,8],
       [0,3,6],[1,4,7],[2,5,8],
       [0,4,8],[2,4,6]
     ];
-
-    const toEmoji = (p) => p === X ? '❌' : '⭕';
 
     function updateScoreUI(){
       scoreEl.textContent = `❌ ${scoreX} : ${scoreO} ⭕`;
@@ -251,13 +248,14 @@
       overlay.hidden = true;
     }
 
+    // ✅ теперь возвращает объект { winner, line } или null
     function checkWinner(){
       for (const [a,b,c] of wins){
         if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]){
-          return cells[a]; // X или O
+          return { winner: cells[a], line: [a,b,c] };
         }
       }
-      return cells.includes(null) ? null : 'draw';
+      return cells.includes(null) ? null : { winner: 'draw', line: null };
     }
 
     function onCellClick(i){
@@ -270,16 +268,20 @@
       if (result){
         gameOver = true;
 
-        if (result === 'draw'){
+        // ✅ сохраняем победную линию для подсветки
+        if (result.winner !== 'draw') winningLine = result.line;
+        render();
+
+        if (result.winner === 'draw'){
           subtitle.textContent = 'Ничья 🤝';
           showOverlay('Ничья 🤝', 'Сильная партия. Сыграем ещё?');
         } else {
-          if (result === X) scoreX++;
-          if (result === O) scoreO++;
+          if (result.winner === X) scoreX++;
+          if (result.winner === O) scoreO++;
           updateScoreUI();
 
-          subtitle.textContent = `Победил ${toEmoji(result)} 🎉`;
-          showOverlay('Игра окончена 🎉', `Победил ${toEmoji(result)}`);
+          subtitle.textContent = `Победил ${toEmoji(result.winner)} 🎉`;
+          showOverlay('Игра окончена 🎉', `Победил ${toEmoji(result.winner)}`);
         }
         return;
       }
@@ -293,9 +295,13 @@
       cells.forEach((value, i) => {
         const cell = document.createElement('div');
         cell.className = 'cell';
-        cell.textContent = value ? value : '';          // рисуем X/O как текст
+        cell.textContent = value ? value : '';
         cell.classList.toggle('x', value === X);
         cell.classList.toggle('o', value === O);
+
+        // ✅ подсветка выигрышных клеток
+        if (winningLine && winningLine.includes(i)) cell.classList.add('win');
+
         cell.addEventListener('click', () => onCellClick(i));
         board.appendChild(cell);
       });
@@ -305,6 +311,7 @@
       cells = Array(9).fill(null);
       current = X;
       gameOver = false;
+      winningLine = null;          // ✅ сброс подсветки
       subtitle.textContent = 'Ход: ❌';
       hideOverlay();
       render();
@@ -326,7 +333,6 @@
       if (e.target === overlay) hideOverlay();
     });
 
-    // старт
     updateScoreUI();
     render();
   </script>
