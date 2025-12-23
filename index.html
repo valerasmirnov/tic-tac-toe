@@ -57,7 +57,6 @@
       white-space:nowrap;
     }
 
-    /* Цветные символы в тексте */
     .markX{ color:var(--x); font-weight:900; }
     .markO{ color:var(--o); font-weight:900; }
 
@@ -79,38 +78,37 @@
       display:flex;
       align-items:center;
       justify-content:center;
+
       background:var(--cell);
       border:1px solid var(--border);
       border-radius:16px;
+
       font-size:clamp(44px,10vw,72px);
       font-weight:900;
       line-height:1;
+
       cursor:pointer;
       user-select:none;
       transition:background .12s ease, box-shadow .2s ease, border-color .2s ease;
       touch-action:manipulation;
     }
 
-    .cell:active{ background:var(--cellActive); } /* без масштабирования */
+    .cell:active{ background:var(--cellActive); } /* без scale */
 
     .cell.x{ color:var(--x); }
     .cell.o{ color:var(--o); }
 
-    /* Победная линия */
     .cell.win{
       border-color: rgba(122,162,255,.65);
       box-shadow: 0 0 0 2px rgba(122,162,255,.25), 0 0 28px rgba(122,162,255,.18);
     }
 
-    /* ✅ Анимация появления символа */
     @keyframes pop {
       0%   { transform: scale(.86); opacity: 0; }
       60%  { transform: scale(1.08); opacity: 1; }
       100% { transform: scale(1); }
     }
-    .cell.pop{
-      animation: pop 180ms ease-out;
-    }
+    .cell.pop{ animation: pop 180ms ease-out; }
 
     .row{
       display:flex;
@@ -140,7 +138,7 @@
     }
     .primary:active{ background:rgba(122,162,255,.28); }
 
-    /* OVERLAY */
+    /* OVERLAYS */
     .overlay{
       position:fixed;
       inset:0;
@@ -155,7 +153,7 @@
     .overlay[hidden]{ display:none !important; }
 
     .modal{
-      width:min(420px,100%);
+      width:min(440px,100%);
       background:rgba(21,24,34,.95);
       border:1px solid var(--border);
       border-radius:18px;
@@ -180,6 +178,50 @@
       gap:10px;
       flex-wrap:wrap;
     }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin:10px 0 12px;
+    }
+    .fieldLabel{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .seg{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .chip{
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      cursor:pointer;
+      user-select:none;
+      font-weight:900;
+      font-size:14px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .chip.active{
+      background:rgba(122,162,255,.22);
+      border-color:rgba(122,162,255,.35);
+    }
+    select{
+      appearance:none;
+      -webkit-appearance:none;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      font-size:14px;
+      font-weight:800;
+    }
   </style>
 </head>
 
@@ -188,7 +230,7 @@
     <header>
       <div>
         <h1>Крестики-нолики</h1>
-        <p class="sub" id="subtitle">Ход: <span class="markX">X</span></p>
+        <p class="sub" id="subtitle">Выбери режим в меню</p>
       </div>
       <div class="pill" id="score"><span class="markX">X</span> 0 : 0 <span class="markO">O</span></div>
     </header>
@@ -196,43 +238,91 @@
     <div class="board" id="board" aria-label="Игровое поле 3 на 3"></div>
 
     <div class="row">
-      <button class="primary" id="restartBtn">Новая игра</button>
+      <button class="primary" id="newGameBtn">Новая игра</button>
       <button id="resetScoreBtn">Сбросить счёт</button>
     </div>
   </div>
 
-  <div class="overlay" id="overlay" hidden>
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modalTitle" id="modalTitle">Игра окончена</div>
-      <div class="modalText" id="modalText"></div>
+  <!-- Стартовый экран -->
+  <div class="overlay" id="startOverlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+      <div class="modalTitle" id="startTitle">Старт</div>
+      <div class="modalText">Выбери режим и за кого играешь.</div>
+
+      <div class="field">
+        <div class="fieldLabel">Режим</div>
+        <div class="seg" id="modeSeg">
+          <div class="chip active" data-mode="pvp" id="modePvp">👥 Два игрока</div>
+          <div class="chip" data-mode="ai" id="modeAi">🤖 Против ИИ</div>
+        </div>
+      </div>
+
+      <div class="field" id="sideField">
+        <div class="fieldLabel">Ты играешь за</div>
+        <div class="seg" id="sideSeg">
+          <div class="chip active" data-side="X" id="sideX"><span class="markX">X</span></div>
+          <div class="chip" data-side="O" id="sideO"><span class="markO">O</span></div>
+        </div>
+      </div>
+
+      <div class="field" id="difficultyField" style="display:none;">
+        <div class="fieldLabel">Сложность ИИ</div>
+        <select id="difficulty">
+          <option value="easy">Лёгкая</option>
+          <option value="hard">Невозможно выиграть</option>
+        </select>
+      </div>
+
+      <div class="modalBtns">
+        <button class="primary" id="startBtn">Начать</button>
+        <button id="closeStartBtn">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Окно результата -->
+  <div class="overlay" id="resultOverlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+      <div class="modalTitle" id="resultTitle">Игра окончена</div>
+      <div class="modalText" id="resultText"></div>
       <div class="modalBtns">
         <button class="primary" id="playAgainBtn">Играть ещё</button>
-        <button id="closeBtn">Закрыть</button>
+        <button id="closeResultBtn">Закрыть</button>
       </div>
     </div>
   </div>
 
   <script>
-    const board = document.getElementById('board');
-    const subtitle = document.getElementById('subtitle');
+    // ===== DOM =====
+    const boardEl = document.getElementById('board');
+    const subtitleEl = document.getElementById('subtitle');
     const scoreEl = document.getElementById('score');
 
-    const overlay = document.getElementById('overlay');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalText = document.getElementById('modalText');
+    const newGameBtn = document.getElementById('newGameBtn');
+    const resetScoreBtn = document.getElementById('resetScoreBtn');
 
+    const startOverlay = document.getElementById('startOverlay');
+    const modePvp = document.getElementById('modePvp');
+    const modeAi = document.getElementById('modeAi');
+    const sideField = document.getElementById('sideField');
+    const difficultyField = document.getElementById('difficultyField');
+    const difficultyEl = document.getElementById('difficulty');
+
+    const sideX = document.getElementById('sideX');
+    const sideO = document.getElementById('sideO');
+
+    const startBtn = document.getElementById('startBtn');
+    const closeStartBtn = document.getElementById('closeStartBtn');
+
+    const resultOverlay = document.getElementById('resultOverlay');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultText = document.getElementById('resultText');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    const closeResultBtn = document.getElementById('closeResultBtn');
+
+    // ===== Consts =====
     const X = 'X';
     const O = 'O';
-
-    let current = X;
-    let cells = Array(9).fill(null);
-    let gameOver = false;
-    let winningLine = null;
-
-    let scoreX = 0;
-    let scoreO = 0;
-
-    let lastMove = null; // ✅ индекс последнего хода для анимации
 
     const wins = [
       [0,1,2],[3,4,5],[6,7,8],
@@ -240,6 +330,24 @@
       [0,4,8],[2,4,6]
     ];
 
+    // ===== State =====
+    let mode = 'pvp';          // 'pvp' | 'ai'
+    let human = X;             // X|O (только для ai)
+    let ai = O;                // противоположный
+    let difficulty = 'easy';
+
+    let current = X;
+    let cells = Array(9).fill(null);
+    let gameOver = false;
+    let winningLine = null;
+    let lastMove = null;
+
+    let scoreX = 0;
+    let scoreO = 0;
+
+    let endTimer = null;
+
+    // ===== Helpers =====
     function markHTML(p){
       return p === X ? '<span class="markX">X</span>' : '<span class="markO">O</span>';
     }
@@ -248,102 +356,281 @@
       scoreEl.innerHTML = `${markHTML(X)} ${scoreX} : ${scoreO} ${markHTML(O)}`;
     }
 
-    function setSubtitleTurn(){
-      subtitle.innerHTML = `Ход: ${markHTML(current)}`;
+    function clearEndTimer(){
+      if (endTimer){ clearTimeout(endTimer); endTimer = null; }
     }
 
+    function setSubtitleTurn(){
+      if (gameOver) return;
+      if (mode === 'ai'){
+        const suffix = (current === ai) ? ' <span style="color:var(--muted); font-size:12px;">(ИИ)</span>' : '';
+        subtitleEl.innerHTML = `Ход: ${markHTML(current)}${suffix}`;
+      } else {
+        subtitleEl.innerHTML = `Ход: ${markHTML(current)}`;
+      }
+    }
+
+    function showStartOverlay(){
+      startOverlay.hidden = false;
+    }
+    function hideStartOverlay(){
+      startOverlay.hidden = true;
+    }
+
+    function showResultOverlay(title, html){
+      resultTitle.textContent = title;
+      resultText.innerHTML = html;
+      resultOverlay.hidden = false;
+    }
+    function hideResultOverlay(){
+      resultOverlay.hidden = true;
+    }
+
+    // ===== Render =====
+    function render(){
+      boardEl.innerHTML = '';
+      cells.forEach((v,i)=>{
+        const c = document.createElement('div');
+        c.className = 'cell';
+        c.textContent = v || '';
+        c.classList.toggle('x', v === X);
+        c.classList.toggle('o', v === O);
+        if (winningLine && winningLine.includes(i)) c.classList.add('win');
+        if (lastMove === i && v) c.classList.add('pop');
+        c.addEventListener('click', () => onCellClick(i));
+        boardEl.appendChild(c);
+      });
+    }
+
+    // ===== Game logic =====
     function checkWinner(){
       for (const [a,b,c] of wins){
         if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]){
-          return { winner: cells[a], line:[a,b,c] };
+          return { winner: cells[a], line: [a,b,c] };
         }
       }
       return cells.includes(null) ? null : { winner:'draw', line:null };
     }
 
-    function onCellClick(i){
-      if (cells[i] || gameOver) return;
-
-      cells[i] = current;
-      lastMove = i;               // ✅ запоминаем куда поставили
+    function finishGame(res){
+      gameOver = true;
+      winningLine = res.line;
       render();
 
-      const result = checkWinner();
-      if (result){
-        gameOver = true;
-        winningLine = result.line;
-        render();
+      clearEndTimer();
+      endTimer = setTimeout(() => {
+        if (res.winner === 'draw'){
+          subtitleEl.textContent = 'Ничья 🤝';
+          showResultOverlay('Ничья 🤝', 'Сильная партия. Сыграем ещё?');
+        } else {
+          if (res.winner === X) scoreX++;
+          if (res.winner === O) scoreO++;
+          updateScore();
+          subtitleEl.innerHTML = `Победил ${markHTML(res.winner)} 🎉`;
+          showResultOverlay('Игра окончена 🎉', `Победил ${markHTML(res.winner)}`);
+        }
+      }, 2000);
+    }
 
-        setTimeout(() => {
-          if (result.winner === 'draw'){
-            subtitle.textContent = 'Ничья 🤝';
-            showOverlay('Ничья 🤝','Сыграем ещё?');
-          } else {
-            if (result.winner === X) scoreX++;
-            if (result.winner === O) scoreO++;
-            updateScore();
-            subtitle.innerHTML = `Победил ${markHTML(result.winner)} 🎉`;
-            modalTitle.textContent = 'Игра окончена 🎉';
-            modalText.innerHTML = `Победил ${markHTML(result.winner)}`;
-            overlay.hidden = false;
-          }
-        }, 2000);
+    function place(i, player){
+      cells[i] = player;
+      lastMove = i;
+      render();
+    }
 
-        return;
+    function onCellClick(i){
+      if (gameOver || cells[i]) return;
+
+      if (mode === 'ai' && current === ai) return; // пока ход ИИ — блок
+
+      place(i, current);
+
+      const res = checkWinner();
+      if (res) return finishGame(res);
+
+      current = (current === X) ? O : X;
+      setSubtitleTurn();
+
+      if (mode === 'ai' && current === ai){
+        setTimeout(aiTurn, 250);
+      }
+    }
+
+    // ===== AI =====
+    function aiTurn(){
+      if (mode !== 'ai' || gameOver || current !== ai) return;
+
+      const move = (difficulty === 'hard')
+        ? bestMoveMinimax(cells, ai).index
+        : randomMove(cells);
+
+      if (move == null) return;
+
+      place(move, ai);
+
+      const res = checkWinner();
+      if (res) return finishGame(res);
+
+      current = human;
+      setSubtitleTurn();
+    }
+
+    function randomMove(board){
+      const empty = [];
+      for (let i=0;i<9;i++) if (!board[i]) empty.push(i);
+      if (!empty.length) return null;
+      return empty[Math.floor(Math.random()*empty.length)];
+    }
+
+    function winnerOn(board){
+      for (const [a,b,c] of wins){
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
+      }
+      return board.includes(null) ? null : 'draw';
+    }
+
+    function bestMoveMinimax(board, player){
+      return minimax(board.slice(), player);
+    }
+
+    function minimax(b, player){
+      const t = winnerOn(b);
+      if (t){
+        if (t === ai) return { score: 10 };
+        if (t === human) return { score: -10 };
+        return { score: 0 };
       }
 
-      current = current === X ? O : X;
-      setSubtitleTurn();
+      const empty = [];
+      for (let i=0;i<9;i++) if (!b[i]) empty.push(i);
+
+      const moves = [];
+      for (const idx of empty){
+        b[idx] = player;
+        const next = minimax(b, player === X ? O : X);
+        moves.push({ index: idx, score: next.score });
+        b[idx] = null;
+      }
+
+      const wantMax = (player === ai);
+      let best = moves[0];
+      for (const m of moves){
+        if (wantMax){
+          if (m.score > best.score) best = m;
+        } else {
+          if (m.score < best.score) best = m;
+        }
+      }
+      return best;
     }
 
-    function render(){
-      board.innerHTML = '';
-      cells.forEach((v,i)=>{
-        const c = document.createElement('div');
-        c.className='cell';
-        c.textContent = v || '';
-        c.classList.toggle('x',v===X);
-        c.classList.toggle('o',v===O);
-        if (winningLine && winningLine.includes(i)) c.classList.add('win');
-
-        // ✅ анимация только для последнего хода
-        if (lastMove === i && v) c.classList.add('pop');
-
-        c.onclick = () => onCellClick(i);
-        board.appendChild(c);
-      });
-    }
-
-    function showOverlay(t,txt){
-      modalTitle.textContent = t;
-      modalText.textContent = txt;
-      overlay.hidden = false;
-    }
-
-    function resetGame(){
+    // ===== Start / Reset =====
+    function resetBoard(){
+      clearEndTimer();
+      hideResultOverlay();
       cells = Array(9).fill(null);
-      current = X;
       gameOver = false;
       winningLine = null;
-      lastMove = null;            // ✅ сброс анимации
-      setSubtitleTurn();
-      overlay.hidden = true;
+      lastMove = null;
       render();
     }
 
-    document.getElementById('restartBtn').onclick = resetGame;
-    document.getElementById('playAgainBtn').onclick = resetGame;
-    document.getElementById('closeBtn').onclick = () => overlay.hidden = true;
-    document.getElementById('resetScoreBtn').onclick = () => {
-      scoreX = scoreO = 0;
-      updateScore();
-      resetGame();
-    };
+    function startGame(){
+      resetBoard();
 
-    // старт
+      if (mode === 'ai'){
+        ai = (human === X) ? O : X;
+        current = X; // всегда стартует X
+        setSubtitleTurn();
+        hideStartOverlay();
+
+        // если человек выбрал O — ИИ играет за X и ходит первым
+        if (human === O){
+          current = ai;       // X
+          setSubtitleTurn();
+          setTimeout(aiTurn, 250);
+        } else {
+          current = human;    // X
+          setSubtitleTurn();
+        }
+      } else {
+        // pvp
+        current = X;
+        setSubtitleTurn();
+        hideStartOverlay();
+      }
+    }
+
+    // ===== Start UI wiring =====
+    function setMode(next){
+      mode = next;
+      modePvp.classList.toggle('active', mode === 'pvp');
+      modeAi.classList.toggle('active', mode === 'ai');
+
+      // для pvp выбор стороны не нужен
+      sideField.style.display = (mode === 'ai') ? '' : 'none';
+      difficultyField.style.display = (mode === 'ai') ? '' : 'none';
+    }
+
+    function setSide(next){
+      human = next;
+      sideX.classList.toggle('active', human === X);
+      sideO.classList.toggle('active', human === O);
+    }
+
+    modePvp.addEventListener('click', () => setMode('pvp'));
+    modeAi.addEventListener('click', () => setMode('ai'));
+
+    sideX.addEventListener('click', () => setSide(X));
+    sideO.addEventListener('click', () => setSide(O));
+
+    difficultyEl.addEventListener('change', () => {
+      difficulty = difficultyEl.value;
+    });
+
+    startBtn.addEventListener('click', () => {
+      // при смене режима/стороны можно оставить счёт, но обычно логичнее сбросить:
+      // если хочешь НЕ сбрасывать — убери 2 строки ниже.
+      // scoreX = 0; scoreO = 0; updateScore();
+
+      startGame();
+    });
+
+    closeStartBtn.addEventListener('click', () => {
+      // если закрыли, но игра ещё не стартовала — просто оставим оверлей (не дадим пустой экран)
+      // поэтому закрывать разрешим только если уже была игра (есть хотя бы один ход или счёт/не первый запуск)
+      startOverlay.hidden = true;
+      if (!cells.some(v => v) && scoreX === 0 && scoreO === 0) startOverlay.hidden = false;
+    });
+
+    // Кнопки
+    newGameBtn.addEventListener('click', () => {
+      hideResultOverlay();
+      showStartOverlay();
+    });
+
+    resetScoreBtn.addEventListener('click', () => {
+      scoreX = 0; scoreO = 0;
+      updateScore();
+      hideResultOverlay();
+      showStartOverlay();
+    });
+
+    playAgainBtn.addEventListener('click', () => {
+      hideResultOverlay();
+      // “Играть ещё” — стартуем с теми же настройками без стартового экрана
+      startGame();
+    });
+
+    closeResultBtn.addEventListener('click', hideResultOverlay);
+    resultOverlay.addEventListener('click', (e) => { if (e.target === resultOverlay) hideResultOverlay(); });
+
+    // ===== Start =====
     updateScore();
-    setSubtitleTurn();
+    setMode('pvp');
+    setSide(X);
     render();
+    showStartOverlay();
   </script>
 </body>
 </html>
