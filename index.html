@@ -57,7 +57,7 @@
       white-space:nowrap;
     }
 
-    /* Цветные символы в тексте (статус/счёт/модалка) */
+    /* Цветные символы в тексте */
     .markX{ color:var(--x); font-weight:900; }
     .markO{ color:var(--o); font-weight:900; }
 
@@ -100,6 +100,16 @@
     .cell.win{
       border-color: rgba(122,162,255,.65);
       box-shadow: 0 0 0 2px rgba(122,162,255,.25), 0 0 28px rgba(122,162,255,.18);
+    }
+
+    /* ✅ Анимация появления символа */
+    @keyframes pop {
+      0%   { transform: scale(.86); opacity: 0; }
+      60%  { transform: scale(1.08); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+    .cell.pop{
+      animation: pop 180ms ease-out;
     }
 
     .row{
@@ -222,6 +232,8 @@
     let scoreX = 0;
     let scoreO = 0;
 
+    let lastMove = null; // ✅ индекс последнего хода для анимации
+
     const wins = [
       [0,1,2],[3,4,5],[6,7,8],
       [0,3,6],[1,4,7],[2,5,8],
@@ -253,6 +265,7 @@
       if (cells[i] || gameOver) return;
 
       cells[i] = current;
+      lastMove = i;               // ✅ запоминаем куда поставили
       render();
 
       const result = checkWinner();
@@ -261,7 +274,6 @@
         winningLine = result.line;
         render();
 
-        // ✅ пауза 2 сек перед модалкой
         setTimeout(() => {
           if (result.winner === 'draw'){
             subtitle.textContent = 'Ничья 🤝';
@@ -271,9 +283,9 @@
             if (result.winner === O) scoreO++;
             updateScore();
             subtitle.innerHTML = `Победил ${markHTML(result.winner)} 🎉`;
-            showOverlay('Игра окончена 🎉', `Победил ${result.winner === X ? 'X' : 'O'}`);
-            // в тексте модалки тоже раскрасим:
+            modalTitle.textContent = 'Игра окончена 🎉';
             modalText.innerHTML = `Победил ${markHTML(result.winner)}`;
+            overlay.hidden = false;
           }
         }, 2000);
 
@@ -293,6 +305,10 @@
         c.classList.toggle('x',v===X);
         c.classList.toggle('o',v===O);
         if (winningLine && winningLine.includes(i)) c.classList.add('win');
+
+        // ✅ анимация только для последнего хода
+        if (lastMove === i && v) c.classList.add('pop');
+
         c.onclick = () => onCellClick(i);
         board.appendChild(c);
       });
@@ -300,9 +316,7 @@
 
     function showOverlay(t,txt){
       modalTitle.textContent = t;
-      // modalText обычно задаём через innerHTML выше (чтобы цвет работал),
-      // но на ничьей — обычный текст:
-      if (t.includes('Ничья')) modalText.textContent = txt;
+      modalText.textContent = txt;
       overlay.hidden = false;
     }
 
@@ -311,6 +325,7 @@
       current = X;
       gameOver = false;
       winningLine = null;
+      lastMove = null;            // ✅ сброс анимации
       setSubtitleTurn();
       overlay.hidden = true;
       render();
@@ -325,6 +340,7 @@
       resetGame();
     };
 
+    // старт
     updateScore();
     setSubtitleTurn();
     render();
