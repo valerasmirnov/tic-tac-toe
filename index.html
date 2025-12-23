@@ -42,10 +42,11 @@
       display:flex;
       justify-content:space-between;
       align-items:flex-end;
+      gap:12px;
     }
 
-    h1{ margin:0; font-size:22px; }
-    .sub{ margin-top:4px; font-size:14px; color:var(--muted); }
+    h1{ margin:0; font-size:22px; letter-spacing:.2px; }
+    .sub{ margin:4px 0 0; font-size:14px; color:var(--muted); }
 
     .pill{
       padding:8px 12px;
@@ -53,7 +54,12 @@
       border-radius:999px;
       background:rgba(255,255,255,.04);
       font-size:14px;
+      white-space:nowrap;
     }
+
+    /* Цветные символы в тексте (статус/счёт/модалка) */
+    .markX{ color:var(--x); font-weight:900; }
+    .markO{ color:var(--o); font-weight:900; }
 
     .board{
       width:100%;
@@ -82,12 +88,15 @@
       cursor:pointer;
       user-select:none;
       transition:background .12s ease, box-shadow .2s ease, border-color .2s ease;
+      touch-action:manipulation;
     }
 
-    .cell:active{ background:var(--cellActive); }
+    .cell:active{ background:var(--cellActive); } /* без масштабирования */
+
     .cell.x{ color:var(--x); }
     .cell.o{ color:var(--o); }
 
+    /* Победная линия */
     .cell.win{
       border-color: rgba(122,162,255,.65);
       box-shadow: 0 0 0 2px rgba(122,162,255,.25), 0 0 28px rgba(122,162,255,.18);
@@ -96,11 +105,13 @@
     .row{
       display:flex;
       gap:10px;
+      flex-wrap:wrap;
     }
 
     button{
       flex:1;
-      padding:12px;
+      min-width:160px;
+      padding:12px 14px;
       font-size:16px;
       font-weight:800;
       border-radius:14px;
@@ -108,13 +119,18 @@
       background:rgba(255,255,255,.08);
       color:var(--text);
       cursor:pointer;
+      transition:background .12s ease;
+      touch-action:manipulation;
     }
+    button:active{ background:rgba(255,255,255,.12); }
 
     .primary{
       background:rgba(122,162,255,.22);
       border-color:rgba(122,162,255,.35);
     }
+    .primary:active{ background:rgba(122,162,255,.28); }
 
+    /* OVERLAY */
     .overlay{
       position:fixed;
       inset:0;
@@ -126,7 +142,6 @@
       backdrop-filter:blur(6px);
       z-index:999;
     }
-
     .overlay[hidden]{ display:none !important; }
 
     .modal{
@@ -147,11 +162,13 @@
       font-size:15px;
       color:var(--muted);
       margin-bottom:14px;
+      line-height:1.35;
     }
 
     .modalBtns{
       display:flex;
       gap:10px;
+      flex-wrap:wrap;
     }
   </style>
 </head>
@@ -161,12 +178,12 @@
     <header>
       <div>
         <h1>Крестики-нолики</h1>
-        <p class="sub" id="subtitle">Ход: ❌</p>
+        <p class="sub" id="subtitle">Ход: <span class="markX">X</span></p>
       </div>
-      <div class="pill" id="score">❌ 0 : 0 ⭕</div>
+      <div class="pill" id="score"><span class="markX">X</span> 0 : 0 <span class="markO">O</span></div>
     </header>
 
-    <div class="board" id="board"></div>
+    <div class="board" id="board" aria-label="Игровое поле 3 на 3"></div>
 
     <div class="row">
       <button class="primary" id="restartBtn">Новая игра</button>
@@ -175,8 +192,8 @@
   </div>
 
   <div class="overlay" id="overlay" hidden>
-    <div class="modal">
-      <div class="modalTitle" id="modalTitle"></div>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modalTitle" id="modalTitle">Игра окончена</div>
       <div class="modalText" id="modalText"></div>
       <div class="modalBtns">
         <button class="primary" id="playAgainBtn">Играть ещё</button>
@@ -196,7 +213,6 @@
 
     const X = 'X';
     const O = 'O';
-    const toEmoji = p => p === X ? '❌' : '⭕';
 
     let current = X;
     let cells = Array(9).fill(null);
@@ -212,8 +228,16 @@
       [0,4,8],[2,4,6]
     ];
 
+    function markHTML(p){
+      return p === X ? '<span class="markX">X</span>' : '<span class="markO">O</span>';
+    }
+
     function updateScore(){
-      scoreEl.textContent = `❌ ${scoreX} : ${scoreO} ⭕`;
+      scoreEl.innerHTML = `${markHTML(X)} ${scoreX} : ${scoreO} ${markHTML(O)}`;
+    }
+
+    function setSubtitleTurn(){
+      subtitle.innerHTML = `Ход: ${markHTML(current)}`;
     }
 
     function checkWinner(){
@@ -237,6 +261,7 @@
         winningLine = result.line;
         render();
 
+        // ✅ пауза 2 сек перед модалкой
         setTimeout(() => {
           if (result.winner === 'draw'){
             subtitle.textContent = 'Ничья 🤝';
@@ -245,8 +270,10 @@
             if (result.winner === X) scoreX++;
             if (result.winner === O) scoreO++;
             updateScore();
-            subtitle.textContent = `Победил ${toEmoji(result.winner)} 🎉`;
-            showOverlay('Игра окончена 🎉',`Победил ${toEmoji(result.winner)}`);
+            subtitle.innerHTML = `Победил ${markHTML(result.winner)} 🎉`;
+            showOverlay('Игра окончена 🎉', `Победил ${result.winner === X ? 'X' : 'O'}`);
+            // в тексте модалки тоже раскрасим:
+            modalText.innerHTML = `Победил ${markHTML(result.winner)}`;
           }
         }, 2000);
 
@@ -254,7 +281,7 @@
       }
 
       current = current === X ? O : X;
-      subtitle.textContent = `Ход: ${toEmoji(current)}`;
+      setSubtitleTurn();
     }
 
     function render(){
@@ -273,7 +300,9 @@
 
     function showOverlay(t,txt){
       modalTitle.textContent = t;
-      modalText.textContent = txt;
+      // modalText обычно задаём через innerHTML выше (чтобы цвет работал),
+      // но на ничьей — обычный текст:
+      if (t.includes('Ничья')) modalText.textContent = txt;
       overlay.hidden = false;
     }
 
@@ -282,7 +311,7 @@
       current = X;
       gameOver = false;
       winningLine = null;
-      subtitle.textContent = 'Ход: ❌';
+      setSubtitleTurn();
       overlay.hidden = true;
       render();
     }
@@ -297,6 +326,7 @@
     };
 
     updateScore();
+    setSubtitleTurn();
     render();
   </script>
 </body>
