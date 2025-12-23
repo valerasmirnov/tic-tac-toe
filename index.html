@@ -14,12 +14,11 @@
       --cellActive:#262d42;
       --border:rgba(255,255,255,.12);
       --radius:18px;
+      --x:#ff3b30;     /* красный X */
+      --o:#4da3ff;     /* синий O */
     }
 
-    *{
-      box-sizing:border-box;
-      -webkit-tap-highlight-color:transparent;
-    }
+    *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
     body{
       margin:0;
@@ -44,15 +43,13 @@
       display:flex;
       justify-content:space-between;
       align-items:flex-end;
+      gap:12px;
     }
 
-    h1{
-      margin:0;
-      font-size:22px;
-    }
+    h1{ margin:0; font-size:22px; letter-spacing:.2px; }
 
     .sub{
-      margin-top:4px;
+      margin:4px 0 0;
       font-size:14px;
       color:var(--muted);
     }
@@ -61,8 +58,9 @@
       padding:8px 12px;
       border:1px solid var(--border);
       border-radius:999px;
-      font-size:14px;
       background:rgba(255,255,255,.04);
+      font-size:14px;
+      white-space:nowrap;
     }
 
     .board{
@@ -77,26 +75,35 @@
       border-radius:var(--radius);
     }
 
+    /* ✅ фикс: клетки всегда квадратные, не зависят от содержимого */
     .cell{
+      width:100%;
+      aspect-ratio:1/1;
+
       display:flex;
       align-items:center;
       justify-content:center;
+
       background:var(--cell);
       border:1px solid var(--border);
       border-radius:16px;
+
       font-size:clamp(44px,10vw,72px);
-      font-weight:800;
+      font-weight:900;
+      line-height:1;
+
       cursor:pointer;
-      transition:background .12s ease;
       user-select:none;
+      transition:background .12s ease;
+      touch-action:manipulation;
     }
 
-    .cell:active{
-      background:var(--cellActive);
-    }
+    /* ✅ без масштабирования */
+    .cell:active{ background:var(--cellActive); }
 
-    .cell.o{ color:#4da3ff; }
-    .cell.x{ color:var(--text); }
+    /* ✅ цвета символов */
+    .cell.x{ color:var(--x); }
+    .cell.o{ color:var(--o); }
 
     .row{
       display:flex;
@@ -106,24 +113,25 @@
 
     button{
       flex:1;
-      padding:12px;
+      min-width:160px;
+      padding:12px 14px;
       font-size:16px;
-      font-weight:700;
+      font-weight:800;
       border-radius:14px;
       border:1px solid var(--border);
       background:rgba(255,255,255,.08);
       color:var(--text);
       cursor:pointer;
+      transition:background .12s ease;
+      touch-action:manipulation;
     }
-
-    button:active{
-      background:rgba(255,255,255,.12);
-    }
+    button:active{ background:rgba(255,255,255,.12); }
 
     .primary{
       background:rgba(122,162,255,.22);
       border-color:rgba(122,162,255,.35);
     }
+    .primary:active{ background:rgba(122,162,255,.28); }
 
     /* ===== OVERLAY ===== */
     .overlay{
@@ -132,23 +140,20 @@
       display:flex;
       align-items:center;
       justify-content:center;
+      padding:24px;
       background:rgba(0,0,0,.55);
       backdrop-filter:blur(6px);
       z-index:999;
-      padding:24px;
     }
-
-    /* 🔴 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ */
-    .overlay[hidden]{
-      display:none !important;
-    }
+    /* ✅ фикс hidden */
+    .overlay[hidden]{ display:none !important; }
 
     .modal{
+      width:min(420px,100%);
       background:rgba(21,24,34,.95);
       border:1px solid var(--border);
       border-radius:18px;
       padding:16px;
-      width:min(420px,100%);
     }
 
     .modalTitle{
@@ -156,13 +161,12 @@
       font-weight:900;
       margin-bottom:8px;
     }
-
     .modalText{
       font-size:15px;
       color:var(--muted);
       margin-bottom:14px;
+      line-height:1.35;
     }
-
     .modalBtns{
       display:flex;
       gap:10px;
@@ -176,12 +180,12 @@
     <header>
       <div>
         <h1>Крестики-нолики</h1>
-        <div class="sub" id="subtitle">Ход: ❌</div>
+        <p class="sub" id="subtitle">Ход: ❌</p>
       </div>
       <div class="pill" id="score">❌ 0 : 0 ⭕</div>
     </header>
 
-    <div class="board" id="board"></div>
+    <div class="board" id="board" aria-label="Игровое поле 3 на 3"></div>
 
     <div class="row">
       <button class="primary" id="restartBtn">Новая игра</button>
@@ -189,10 +193,9 @@
     </div>
   </div>
 
-  <!-- OVERLAY -->
   <div class="overlay" id="overlay" hidden>
-    <div class="modal">
-      <div class="modalTitle" id="modalTitle"></div>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modalTitle" id="modalTitle">Игра окончена</div>
       <div class="modalText" id="modalText"></div>
       <div class="modalBtns">
         <button class="primary" id="playAgainBtn">Играть ещё</button>
@@ -206,11 +209,20 @@
     const subtitle = document.getElementById('subtitle');
     const scoreEl = document.getElementById('score');
 
+    const restartBtn = document.getElementById('restartBtn');
+    const resetScoreBtn = document.getElementById('resetScoreBtn');
+
     const overlay = document.getElementById('overlay');
     const modalTitle = document.getElementById('modalTitle');
     const modalText = document.getElementById('modalText');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    const closeBtn = document.getElementById('closeBtn');
 
-    let current = '❌';
+    // ✅ В логике используем обычные буквы, не emoji (важно для iOS цветов)
+    const X = 'X';
+    const O = 'O';
+
+    let current = X;
     let cells = Array(9).fill(null);
     let gameOver = false;
 
@@ -223,76 +235,99 @@
       [0,4,8],[2,4,6]
     ];
 
-    function render(){
-      board.innerHTML='';
-      cells.forEach((v,i)=>{
-        const c=document.createElement('div');
-        c.className='cell';
-        c.textContent=v||'';
-        c.classList.toggle('x',v==='❌');
-        c.classList.toggle('o',v==='⭕');
-        c.onclick=()=>clickCell(i);
-        board.appendChild(c);
-      });
+    const toEmoji = (p) => p === X ? '❌' : '⭕';
+
+    function updateScoreUI(){
+      scoreEl.textContent = `❌ ${scoreX} : ${scoreO} ⭕`;
     }
 
-    function clickCell(i){
-      if(cells[i]||gameOver) return;
-      cells[i]=current;
+    function showOverlay(title, text){
+      modalTitle.textContent = title;
+      modalText.textContent = text;
+      overlay.hidden = false;
+    }
+
+    function hideOverlay(){
+      overlay.hidden = true;
+    }
+
+    function checkWinner(){
+      for (const [a,b,c] of wins){
+        if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]){
+          return cells[a]; // X или O
+        }
+      }
+      return cells.includes(null) ? null : 'draw';
+    }
+
+    function onCellClick(i){
+      if (cells[i] || gameOver) return;
+
+      cells[i] = current;
       render();
-      const r=check();
-      if(r){
-        gameOver=true;
-        if(r==='draw'){
-          showOverlay('Ничья 🤝','Сыграем ещё?');
-        }else{
-          r==='❌'?scoreX++:scoreO++;
-          updateScore();
-          showOverlay('Игра окончена 🎉',`Победил ${r}`);
+
+      const result = checkWinner();
+      if (result){
+        gameOver = true;
+
+        if (result === 'draw'){
+          subtitle.textContent = 'Ничья 🤝';
+          showOverlay('Ничья 🤝', 'Сильная партия. Сыграем ещё?');
+        } else {
+          if (result === X) scoreX++;
+          if (result === O) scoreO++;
+          updateScoreUI();
+
+          subtitle.textContent = `Победил ${toEmoji(result)} 🎉`;
+          showOverlay('Игра окончена 🎉', `Победил ${toEmoji(result)}`);
         }
         return;
       }
-      current=current==='❌'?'⭕':'❌';
-      subtitle.textContent=`Ход: ${current}`;
+
+      current = current === X ? O : X;
+      subtitle.textContent = `Ход: ${toEmoji(current)}`;
     }
 
-    function check(){
-      for(const [a,b,c] of wins){
-        if(cells[a]&&cells[a]===cells[b]&&cells[a]===cells[c]) return cells[a];
-      }
-      return cells.includes(null)?null:'draw';
-    }
-
-    function updateScore(){
-      scoreEl.textContent=`❌ ${scoreX} : ${scoreO} ⭕`;
+    function render(){
+      board.innerHTML = '';
+      cells.forEach((value, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.textContent = value ? value : '';          // рисуем X/O как текст
+        cell.classList.toggle('x', value === X);
+        cell.classList.toggle('o', value === O);
+        cell.addEventListener('click', () => onCellClick(i));
+        board.appendChild(cell);
+      });
     }
 
     function resetGame(){
-      cells=Array(9).fill(null);
-      current='❌';
-      gameOver=false;
-      subtitle.textContent='Ход: ❌';
-      overlay.hidden=true;
+      cells = Array(9).fill(null);
+      current = X;
+      gameOver = false;
+      subtitle.textContent = 'Ход: ❌';
+      hideOverlay();
       render();
     }
 
-    function showOverlay(t,txt){
-      modalTitle.textContent=t;
-      modalText.textContent=txt;
-      overlay.hidden=false;
-    }
+    restartBtn.addEventListener('click', resetGame);
 
-    document.getElementById('restartBtn').onclick=resetGame;
-    document.getElementById('resetScoreBtn').onclick=()=>{
-      scoreX=scoreO=0;
-      updateScore();
+    resetScoreBtn.addEventListener('click', () => {
+      scoreX = 0;
+      scoreO = 0;
+      updateScoreUI();
       resetGame();
-    };
-    document.getElementById('playAgainBtn').onclick=resetGame;
-    document.getElementById('closeBtn').onclick=()=>overlay.hidden=true;
-    overlay.onclick=e=>{if(e.target===overlay)overlay.hidden=true};
+    });
 
-    updateScore();
+    playAgainBtn.addEventListener('click', resetGame);
+    closeBtn.addEventListener('click', hideOverlay);
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) hideOverlay();
+    });
+
+    // старт
+    updateScoreUI();
     render();
   </script>
 </body>
